@@ -79,19 +79,26 @@ def softmax_loss_vectorized(W, X, y, reg):
     num_class = W.shape[1]
     mask = (np.arange(num_train), y)
 
-    S = np.exp(X.dot(W))
-    S_sum = np.sum(S, axis=1)
-    S_correct = S[mask]
+    scores = np.exp(X.dot(W))
+    scores_sum = np.sum(scores, axis=1).reshape((-1, 1))
+    scores_correct = scores[mask].reshape((-1, 1))
 
-    loss = -np.mean(np.log(S_correct / S_sum)) + 0.5 * reg * np.sum(W * W)
+    dsoft = -scores_sum / scores_correct
+    tmp = np.zeros_like(scores)
+    tmp[mask] = scores_sum[:, 0]
+    dh1 = (tmp - scores_correct) / (scores_sum * scores_sum) * scores * dsoft
 
-    params = np.zeros_like(S)
-    params[mask] = S_sum
-    params -= S_correct.reshape((-1, 1))
-    params /= np.reshape((S_sum * S_correct), (-1, 1))
+    dW = np.matmul(X.T, dh1) / num_train + reg * W
 
-    dW = -np.matmul(X.T, S * params) / num_train
-    dW += reg * W
+    loss = -np.mean(np.log(scores_correct / scores_sum)) + 0.5 * reg * np.sum(W * W)
+
+    # params = np.zeros_like(S)
+    # params[mask] = S_sum
+    # params -= S_correct.reshape((-1, 1))
+    # params /= np.reshape((S_sum * S_correct), (-1, 1))
+    #
+    # dW = -np.matmul(X.T, S * params) / num_train
+    # dW += reg * W
 
     #############################################################################
     #                          END OF YOUR CODE                                 #
